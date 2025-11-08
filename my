@@ -1,0 +1,52 @@
+<?php
+$filename = 'checkin_list.csv';
+if (!file_exists($filename)) {
+    echo "สร้างไฟล์ CSV ใหม่: $filename\n";
+    $file = fopen($filename, 'w');
+    if ($file === false) {
+        die("ไม่สามารถสร้างไฟล์ CSV ได้\n");
+    }
+    fputcsv($file, ['Name/ID', 'Check-in Time']);
+    fclose($file);
+} else {
+    echo "ใช้ไฟล์ CSV ที่มีอยู่แล้ว: $filename\n";
+}
+
+$participants = ['Alice', 'Bob', 'Charlie', 'David'];
+require 'vendor/autoload.php';
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+
+$writer = new PngWriter();
+foreach ($participants as $name) {
+    echo "กำลังสร้าง QR Code สำหรับ: $name\n";
+    $qrCode = QrCode::create($name)->setSize(300);
+    $result = $writer->write($qrCode);
+    $filePath = "qr_{$name}.png";
+    $saved = $result->saveToFile($filePath);
+    if ($saved === false) {
+        echo "เกิดข้อผิดพลาดในการบันทึก QR Code สำหรับ $name\n";
+    } else {
+        echo "บันทึก QR Code ของ $name เป็นไฟล์: $filePath\n";
+    }
+}
+
+echo "QR Code สำหรับผู้เข้าร่วมถูกสร้างแล้ว!\n";
+
+function checkInParticipant($name, $filename) {
+    $checkinTime = date('Y-m-d H:i:s');
+    $file = fopen($filename, 'a');
+    if ($file === false) {
+        echo "ไม่สามารถเปิดไฟล์ CSV เพื่อบันทึกเช็คอินได้\n";
+        return;
+    }
+    fputcsv($file, [$name, $checkinTime]);
+    fclose($file);
+    echo "บันทึกผู้เข้าร่วมสแกน: $name เวลา: $checkinTime\n";
+}
+
+foreach ($participants as $name) {
+    checkInParticipant($name, $filename);
+}
+
+echo "เช็คชื่อเสร็จสิ้น! รายชื่อถูกบันทึกใน $filename\n";
